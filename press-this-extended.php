@@ -42,10 +42,16 @@ class Press_This_Extended {
 	 * @access public
 	 */
 	public function __construct() {
-		// This only needs to fire in /wp-admin/ since PT is wp-admin exclusive.
-		add_action( 'admin_init', array( $this, 'load_translations' ) , 1 );
-		add_action( 'admin_init',  array( $this, 'add_settings' ) );
-		add_action( 'admin_init', array( $this, 'execute' ) );
+		global $pagenow;
+
+		add_action( 'admin_init',               array( $this, 'load_translations' ) , 1 );
+		add_action( 'admin_init',               array( $this, 'add_settings' ) );
+		add_action( 'load-options-writing.php', array( $this, 'help_tab' ) );
+
+		if ( 'press-this.php' == $pagenow ) {
+			add_action( 'admin_init',             array( $this, 'execute' ) );
+			add_filter( 'http_headers_useragent', array( $this, 'ua_hack' ) ); // When WP is 5.3+, use anonymous function
+		}
 	}
 
 
@@ -54,7 +60,7 @@ class Press_This_Extended {
  	 *
  	 * @since 1.0.0
  	 */
-	function load_translations() {
+	public function load_translations() {
 		$domain = 'press-this-extended';
 		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
 		load_textdomain( $domain, trailingslashit( WP_LANG_DIR ) . $domain . '/' . $domain . '-' . $locale . '.mo' );
@@ -69,9 +75,21 @@ class Press_This_Extended {
 	 * @access public
 	 **/
 	public function add_settings() {
-		add_settings_section('press-this-extended', 'Press This', null, 'writing');
-		add_settings_field( 'press-this-extended-legacy', 'Legacy Mode', array( $this, 'press_this_extended_legacy' ), 'writing', 'press-this-extended');
-		register_setting( 'writing', 'press-this-extended-legacy', 'intval' );
+		$slug = 'press-this-extended';
+
+		add_settings_section( $slug, 'Press This', null, 'writing');
+
+		add_settings_field( $slug . '-legacy', __( 'Legacy Mode', $slug ), array( $this, 'press_this_extended_legacy' ), 'writing', $slug );
+		register_setting( 'writing', $slug . '-legacy', 'intval' );
+		add_filter( 'default_option_' . $slug . '-legacy', '__return_false' );
+
+		add_settings_field( $slug . '-media', __( 'Media Discovery', $slug ), array( $this, 'press_this_extended_media' ), 'writing', $slug );
+		register_setting( 'writing', $slug . '-media', 'intval' );
+		add_filter( 'default_option_'. $slug . '-media', '__return_true' );
+
+		add_settings_field( $slug . '-text', __( 'Text Discovery', $slug ), array( $this, 'press_this_extended_text' ), 'writing', $slug );
+		register_setting( 'writing', $slug . '-text', 'intval' );
+		add_filter( 'default_option_' . $slug . '-text', '__return_true' );
 	}
 
 	/**
@@ -83,28 +101,42 @@ class Press_This_Extended {
 	 **/
 	public function press_this_extended_legacy() {
 		$html = '<input type="checkbox" id="press-this-extended-legacy" name="press-this-extended-legacy" value="1" ' . checked(1, get_option('press-this-extended-legacy'), false) . '/>';
-		$html .= '<label for="press-this-extended-legacy"> '  . __( 'Have Press This mimic behavior prior to WordPress 4.2') . '</label>';
+		$html .= '<label for="press-this-extended-legacy"> '  . __( 'Have Press This mimic behavior prior to WordPress 4.2', 'press-this-extended' ) . '</label>';
 
 		echo $html;
 	}
 
-	public function execute_html( $html, $data ){
-		$legacy = get_option( 'press-this-extended-legacy' );
+	public function press_this_extended_media(){
+		$html = '<input type="checkbox" id="press-this-extended-media" name="press-this-extended-media" value="1" ' . checked(1, get_option('press-this-extended-media'), false) . '/>';
+		$html .= '<label for="press-this-extended-media"> '  . __( 'Should Press This suggest media to add to a new post?', 'press-this-extended' ) . '</label>';
+		echo $html;
+	}
 
-		if ( $legacy ) {
-			if ( isset( $data['s'] ) ){
-				$html = array(
-					'quote' => '<p>%1$s</p>',
-					'link'  => '<p>via <a href="%1$s">%2$s</a></p>',
-					);
-			}
-			else {
-				$html = array(
-					'quote' => '',
-					'link'  => '<a href="%1$s">%2$s</a>',
-					);
-			}
+	public function press_this_extended_text(){
+		$html = '<input type="checkbox" id="press-this-extended-text" name="press-this-extended-text" value="1" ' . checked(1, get_option('press-this-extended-text'), false) . '/>';
+		$html .= '<label for="press-this-extended-text"> '  . __( "Should Press This add a quote when you haven't selected text?", 'press-this-extended' ) . '</label>';
+		echo $html;
+	}
+
+	public function execute_html_legacy( $html, $data ){
+		if ( isset( $data['s'] ) ){
+			$html = array(
+				'quote' => '<p>%1$s</p>',
+				'link'  => '<p>via <a href="%1$s">%2$s</a></p>',
+				);
 		}
+		else {
+			$html = array(
+				'quote' => '',
+				'link'  => '<a href="%1$s">%2$s</a>',
+				);
+		}
+
+		return $html;
+	}
+
+	public function execute_html( $html, $data ){
+		// make magic happen
 
 		return $html;
 	}
@@ -116,13 +148,63 @@ class Press_This_Extended {
 	 * @since 1.0.0
 	 **/
 	public function execute() {
-		$legacy = get_option( 'press-this-extended-legacy' );
+		$legacy          = get_option( 'press-this-extended-legacy' );
+		$text_discovery  = get_option( 'press-this-extended-text' );
+		$media_discovery = get_option( 'press-this-extended-media' );
 
 		if ( $legacy ) {
-			add_filter( 'press_this_suggested_html', array( $this, 'execute_html'), 10, 2 );
+			add_filter( 'press_this_suggested_html', array( $this, 'execute_html_legacy' ), 10, 2 );
+		}
+
+		if ( $legacy || ! $media_discovery ) {
 			add_filter( 'enable_press_this_media_discovery', '__return_false' ); // It did exist previously but virtually no one used it.
 		}
+
+		if ( ! $text_discovery ) {
+			add_filter( 'press_this_suggested_html', array( $this, 'execute_html' ), 10, 2 );
+		}
+
+		// add option and conditional for this
+		add_filter('wp_editor_settings', array( $this, 'enable_text_editor') );
+		add_action('admin_print_styles', array( $this, 'press_this_text_editor_style') );
 	}
+
+	/**
+	 * Adds contextual help for Press This Extended options.
+	 *
+	 * @return void
+	 * @since 1.0.0
+	 **/
+	public function help_tab() {
+		get_current_screen()->add_help_tab( array(
+			'id'      => 'options-press-this-extended',
+			'title'   => __('Press This'),
+			'content' => '<p>' . __( 'Filler text. These options allow you to customize the Press This bookmarklet to do some cool stuff.' ) . '</p>',
+			)
+		);
+	}
+
+	/**
+	 * Changes the UA on Press This scrapes to "WP Press This".
+	 *
+	 * Added since Medium and pehaps others block all requests with the UA of "WordPress" to stop pingback spam.
+	 *
+	 * @return string New UA string.
+	 * @since 1.0.0
+	 **/
+	public function ua_hack() {
+		return 'WP Press This';
+	}
+
+	public function press_this_text_editor_style(){
+		echo '<style type="text/css">textarea#pressthis {color: #404040;}.quicktags-toolbar {background: 0;}</style>';
+	}
+
+	public function enable_text_editor( $settings ){
+		$settings['quicktags'] = true;
+		return $settings;
+	}
+
 
 }
 
