@@ -1,10 +1,10 @@
 === Press This Extended ===
 Contributors: kraftbj
-Donate link: http://www.brandonkraft.com/donate/
+Donate link: https://www.brandonkraft.com/donate/
 Tags: press this
 Requires at least: 4.2
 Tested up to: 4.2
-Stable tag: 0.1-20150414-2225
+Stable tag: 1.0.0-beta1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,9 +26,9 @@ Via your site's wp-admin Dashboard:
 
 == Frequently Asked Questions ==
 
-= What is Legacy Mode? =
+= What is this? =
 
-The new Press This adds easy-to-use media discovery, blockquote insertion, cooler source links. If you liked the old way, just turn on this option.
+The new Press This adds easy-to-use media discovery, blockquote insertion, cooler source links. It is really flexible, but no UI is included. This reveals the built-in flexibility.
 
 == Changelog ==
 
