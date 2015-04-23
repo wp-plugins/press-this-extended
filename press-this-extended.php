@@ -4,7 +4,7 @@
  * Press This Extended
  *
  * @package     BJGK\Press_this_extended
- * @version     1.0.0-beta1
+ * @version     1.0.0
  * @author      Brandon Kraft <public@brandonkraft.com>
  * @copyright   Copyright (c) 2015, Brandon Kraft
  * @link        https://www.brandonkraft.com/press-this-extended/
@@ -14,7 +14,7 @@
  * Plugin Name: Press This Extended
  * Plugin URI:  https://www.brandonkraft.com/press-this-extended/
  * Description: Provides options for extending and modifying the Press This feature (WP 4.2+)
- * Version:     1.0.0-beta1
+ * Version:     1.0.0
  * Author:      Brandon Kraft
  * Author URI:  https://www.brandonkraft.com
  * License:     GPL-2.0+
@@ -231,7 +231,9 @@ class Press_This_Extended {
 	 * @since 1.0.0
 	 **/
 	function setting_blockquote(){
-		$html = '<input type="text" id="press-this-extended-blockquote" name="press-this-extended-blockquote" value="' . esc_attr( get_option('press-this-extended-blockquote')) . '" class="regular-text ltr" />';
+		$html = '<textarea id="press-this-extended-blockquote" name="press-this-extended-blockquote" class="large-text ltr">';
+		$html .= esc_textarea( get_option('press-this-extended-blockquote'));
+		$html .= '</textarea>';
 		$html .= '<p class="description">' . __( 'Use %1$s as a placeholder for the blockquote.', 'press-this-extended' ) .'</p>';
 		echo $html;
 	}
@@ -243,7 +245,9 @@ class Press_This_Extended {
 	 * @since 1.0.0
 	 **/
 	function setting_citation(){
-		$html = '<input type="text" id="press-this-extended-citation" name="press-this-extended-citation" value="' . esc_attr( get_option('press-this-extended-citation')) . '" class="regular-text ltr" />';
+		$html = '<textarea id="press-this-extended-citation" name="press-this-extended-citation" class="large-text ltr">';
+		$html .= esc_textarea( get_option('press-this-extended-citation'));
+		$html .= '</textarea>';
 		$html .= '<p class="description">' . __( 'Use %1$s and %2$s as a placeholders for the page URL and title, respectively.', 'press-this-extended' ) .'</p>';
 		echo $html;
 	}
